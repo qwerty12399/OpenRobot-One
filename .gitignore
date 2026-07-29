@@ -1,1 +1,17 @@
 .worktrees/
+.superpowers/
+.docx-review/
+
+build/
+install/
+log/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+*.log
+__pycache__/
+*.py[cod]
+Docker Desktop Installer*.exe
+docker-rollback-backup-*/
+tmp/

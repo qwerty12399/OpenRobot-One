@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="openrobot_laser"
+    params="laser_x laser_z laser_radius laser_height laser_mass">
+    <link name="laser_link">
+      <visual>
+        <geometry>
+          <cylinder radius="${laser_radius}" length="${laser_height}"/>
+        </geometry>
+        <material name="openrobot_black"/>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="${laser_radius}" length="${laser_height}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial
+        mass="${laser_mass}"
+        radius="${laser_radius}"
+        length="${laser_height}"
+        rpy="0 0 0"/>
+    </link>
+
+    <joint name="laser_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="laser_link"/>
+      <origin xyz="${laser_x} 0 ${laser_z}"/>
+    </joint>
+  </xacro:macro>
+</robot>

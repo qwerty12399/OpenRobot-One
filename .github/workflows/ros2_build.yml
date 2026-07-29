@@ -1,0 +1,33 @@
+name: ROS 2 build and test
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build development image
+        run: docker build -f docker/Dockerfile -t openrobot-one:humble .
+
+      - name: Build and test workspace
+        run: >-
+          docker run --rm
+          -v "${GITHUB_WORKSPACE}:/workspace"
+          -w /workspace
+          openrobot-one:humble
+          bash -lc "bash ./scripts/build_ros.sh"

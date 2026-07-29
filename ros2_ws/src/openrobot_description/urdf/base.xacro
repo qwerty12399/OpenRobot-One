@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="openrobot_base"
+    params="base_length base_width base_height base_mass wheel_radius">
+    <link name="base_footprint"/>
+
+    <link name="base_link">
+      <visual>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+        <material name="openrobot_blue"/>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial
+        mass="${base_mass}"
+        x="${base_length}"
+        y="${base_width}"
+        z="${base_height}"/>
+    </link>
+
+    <joint name="base_footprint_joint" type="fixed">
+      <parent link="base_footprint"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 ${wheel_radius + base_height / 2.0}"/>
+    </joint>
+  </xacro:macro>
+</robot>

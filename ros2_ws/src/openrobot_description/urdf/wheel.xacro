@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro
+    name="drive_wheel"
+    params="side y wheel_radius wheel_width wheel_mass base_height">
+    <link name="${side}_wheel_link">
+      <visual>
+        <origin rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="openrobot_black"/>
+      </visual>
+      <collision>
+        <origin rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial
+        mass="${wheel_mass}"
+        radius="${wheel_radius}"
+        length="${wheel_width}"
+        rpy="${pi / 2.0} 0 0"/>
+    </link>
+
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel_link"/>
+      <origin xyz="0 ${y} ${-base_height / 2.0}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro
+    name="openrobot_wheels"
+    params="
+      base_length base_height wheel_radius wheel_width wheel_separation
+      wheel_mass caster_radius caster_mass">
+    <xacro:drive_wheel
+      side="left"
+      y="${wheel_separation / 2.0}"
+      wheel_radius="${wheel_radius}"
+      wheel_width="${wheel_width}"
+      wheel_mass="${wheel_mass}"
+      base_height="${base_height}"/>
+    <xacro:drive_wheel
+      side="right"
+      y="${-wheel_separation / 2.0}"
+      wheel_radius="${wheel_radius}"
+      wheel_width="${wheel_width}"
+      wheel_mass="${wheel_mass}"
+      base_height="${base_height}"/>
+
+    <link name="caster_link">
+      <visual>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+        <material name="openrobot_gray"/>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+      </collision>
+      <xacro:sphere_inertial mass="${caster_mass}" radius="${caster_radius}"/>
+    </link>
+
+    <joint name="caster_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="caster_link"/>
+      <origin
+        xyz="${-base_length / 2.0 + 0.04} 0
+          ${caster_radius - wheel_radius - base_height / 2.0}"/>
+    </joint>
+
+    <link name="front_caster_link">
+      <visual>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+        <material name="openrobot_gray"/>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="${caster_radius}"/>
+        </geometry>
+      </collision>
+      <xacro:sphere_inertial mass="${caster_mass}" radius="${caster_radius}"/>
+    </link>
+
+    <joint name="front_caster_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="front_caster_link"/>
+      <origin
+        xyz="${base_length / 2.0 - 0.04} 0
+          ${caster_radius - wheel_radius - base_height / 2.0}"/>
+    </joint>
+  </xacro:macro>
+</robot>
