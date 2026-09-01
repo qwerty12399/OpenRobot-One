@@ -1,14 +1,12 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>openrobot_driver</name>
+  <name>openrobot_task</name>
   <version>0.1.0</version>
-  <description>STM32 serial transport and chassis feedback boundary for OpenRobot-One.</description>
+  <description>Safe robot behavior state-machine boundary for OpenRobot-One.</description>
   <maintainer email="maintainers@openrobot.one">OpenRobot-One maintainers</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-
-  <exec_depend>launch</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

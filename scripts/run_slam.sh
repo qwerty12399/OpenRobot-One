@@ -6,7 +6,8 @@ repo_root="$(cd -- "${script_dir}/.." && pwd)"
 
 if [[ "${1:-}" == "--help" ]]; then
   echo "Usage: ./scripts/run_slam.sh [ROS launch arguments...]"
-  echo "Start SLAM Toolbox only; run ./scripts/run_sim.sh separately."
+  echo "Start SLAM Toolbox only for diagnostics."
+  echo "Normal first-week startup uses ./scripts/run_sim.sh."
   exit 0
 fi
 

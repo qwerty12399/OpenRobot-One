@@ -1,17 +1,18 @@
-"""Reserved hardware launch for the not-yet-implemented real driver."""
+"""Reserved hardware launch for the not-yet-implemented STM32 driver."""
 
 from launch import LaunchDescription
 from launch.actions import LogInfo
 
 
 def generate_launch_description():
-    """Report the deliberate Day 4 hardware-mode boundary."""
+    """Report the deliberate hardware-mode boundary."""
     return LaunchDescription(
         [
             LogInfo(
                 msg=(
-                    "sim=false selected, but the real OpenRobot-One serial "
-                    "driver is not implemented in Day 1-4."
+                    "mode=hardware selected, but the OpenRobot-One STM32 "
+                    "serial driver is not implemented yet; no motor command "
+                    "will be published."
                 )
             )
         ]

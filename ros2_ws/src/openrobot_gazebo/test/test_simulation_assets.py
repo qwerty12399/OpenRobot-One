@@ -28,10 +28,19 @@ def test_simulation_assets_define_the_approved_plugins_and_frames():
 
     launch_source = launch_file.read_text(encoding="utf-8")
     compile(launch_source, str(launch_file), "exec")
-    for argument in ("world", "use_sim_time", "use_rviz", "params_file"):
+    for argument in (
+        "world",
+        "use_sim_time",
+        "use_rviz",
+        "params_file",
+        "robot_config_file",
+    ):
         assert f'"{argument}"' in launch_source
     assert "spawn_entity.py" in launch_source
     assert '"gui": use_rviz' in launch_source
+    assert "yaml.safe_load" in launch_source
+    assert "mappings=xacro_mappings" in launch_source
+    assert "office_test.world" in launch_source
 
     gazebo_source = gazebo_xacro.read_text(encoding="utf-8")
     for required_value in (

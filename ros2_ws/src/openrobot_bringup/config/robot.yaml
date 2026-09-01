@@ -1,0 +1,29 @@
+geometry:
+  # Simulation baseline. Replace only with measured hardware values.
+  base_length_m: 0.26
+  base_width_m: 0.20
+  base_height_m: 0.08
+  wheel_radius_m: 0.0325
+  wheel_width_m: 0.025
+  wheel_separation_m: 0.20
+  encoder_counts_per_wheel_rev: 0
+
+limits:
+  max_linear_mps: 0.35
+  max_angular_rps: 1.50
+  max_linear_accel_mps2: 0.50
+
+communication:
+  baud_rate: 115200
+  command_timeout_ms: 500
+  reconnect_interval_ms: 1000
+
+control:
+  loop_hz: 100
+  telemetry_hz: 50
+
+simulation:
+  update_rate_hz: 50.0
+  max_wheel_torque_nm: 20.0
+  max_wheel_acceleration_rad_s2: 1.0
+  scan_topic: scan

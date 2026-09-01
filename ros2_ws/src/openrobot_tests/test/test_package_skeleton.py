@@ -5,13 +5,17 @@ import xml.etree.ElementTree as ET
 
 
 EXPECTED_PACKAGES = {
+    "openrobot_ai",
     "openrobot_description",
     "openrobot_bringup",
+    "openrobot_control",
     "openrobot_gazebo",
     "openrobot_navigation",
     "openrobot_driver",
     "openrobot_msgs",
+    "openrobot_task",
     "openrobot_tests",
+    "openrobot_vision",
 }
 
 

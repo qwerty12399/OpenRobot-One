@@ -29,7 +29,7 @@ def test_first_week_scripts_are_portable_and_have_help():
 
 
 def test_runtime_scripts_preserve_launch_ownership():
-    """Ensure simulation and SLAM are started by separate scripts."""
+    """Ensure the one-click path has one simulation and one SLAM owner."""
     repository_root = Path(__file__).resolve().parents[4]
     scripts_dir = repository_root / "scripts"
     run_sim = (scripts_dir / "run_sim.sh").read_text(encoding="utf-8")
@@ -37,5 +37,8 @@ def test_runtime_scripts_preserve_launch_ownership():
 
     assert "office_test.world" in run_sim
     assert "openrobot_bringup" in run_sim
+    assert "mode:=sim" in run_sim
+    assert 'slam:="${use_slam}"' in run_sim
+    assert "--no-slam" in run_sim
     assert "openrobot_navigation" in run_slam
     assert "openrobot_bringup" not in run_slam
