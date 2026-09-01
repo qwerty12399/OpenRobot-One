@@ -1,109 +1,84 @@
-# OpenRobot-One | ROS 2 × STM32 移动机器人集成与验证
+# OpenRobot-One | ROS 2 × STM32 双电机闭环验证
 
 [![ROS 2 build and test](https://github.com/qwerty12399/OpenRobot-One/actions/workflows/ros2_build.yml/badge.svg?branch=main)](https://github.com/qwerty12399/OpenRobot-One/actions/workflows/ros2_build.yml)
 ![ROS 2 Humble](https://img.shields.io/badge/ROS_2-Humble-22314E?logo=ros)
 ![STM32F407](https://img.shields.io/badge/MCU-STM32F407-03234B?logo=stmicroelectronics)
-[![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
-OpenRobot-One 是一个低成本双轮差速机器人项目，围绕 **ROS 2 仿真与导航、STM32 板级验证、软硬件接口、安全门和工程交付** 建立可复现的项目闭环。
+OpenRobot-One 是一个 ROS 2 与 STM32 分层验证项目：在 Gazebo 中验证双轮差速、LaserScan、TF 和 SLAM，在真机台架上计划验证两块 BTS7960、两台编码器电机、双速度 PID、UART 和故障停车。两条链路共享 `/cmd_vel`、差速运动学、左右轮命令/反馈语义和测试向量。
 
-这个仓库重点展示的不是尚未完成的功能数量，而是如何把需求拆成阶段、统一接口、验证关键链路、定位异常并留下可交接的证据。
+当前真机是无轮、架空双电机闭环台架，不宣称落地运动、真实里程计精度或真机自主导航。
 
-**适配岗位：** 技术支持 / FAE / 售后支持 · 项目交付 / 实施 · 机器人系统 / 硬件测试 · 售前 / 技术销售
+[项目成果](docs/project_showcase.md) · [系统架构](docs/architecture.md) · [开发路线](docs/roadmap.md) · [验收标准](docs/acceptance.md)
 
-[查看成果与验证证据](docs/project_showcase.md) · [查看项目架构](docs/architecture.md) · [查看验收标准](docs/acceptance.md) · [快速复现](#快速复现)
+## 当前状态
 
-## 核心成果
-
-| 成果 | 验证状态 | 可核验证据 |
+| 范围 | 状态 | 证据 |
 | --- | --- | --- |
-| ROS 2 Humble 工程基线 | **实际通过** | Docker 环境中 11 个包完成构建，87 项测试 0 error / 0 failure / 0 skipped；[验证记录](docs/verification/2026-09-01-project-validation.md#ros-2-构建与测试) |
-| Gazebo + LaserScan + SLAM | **实际通过** | `/scan`、`/odom`、`/joint_states`、`/map` 和目标 TF 链实测存在，`/scan` 平均 9.990 Hz；[运行验收](docs/verification/2026-09-01-project-validation.md#gazebo-与-slam) |
-| STM32F407 板级基线 | **H2 实际通过** | 固件构建、下载、逐字节 verify、寄存器检查和 USART1 双向通信通过；[板级报告](docs/verification/2026-08-31-h2-board-bringup.md) |
-| UART 压力与异常恢复 | **实际通过** | `10000/10000` PING/PONG、`20/20` 复位重连，以及错误帧、超长帧、半包和错误波特率恢复；[测试脚本](scripts/test_h2_uart.ps1) |
-| TF 与接口所有权 | **实际通过（仿真）** | `map → odom → base_footprint → base_link → laser_link` 发布职责已定义并交叉验证；[架构说明](docs/architecture.md#4-tf-唯一发布者) |
-| 电机、编码器和真机闭环 | **未验证 / 禁止外推** | H0/H1 电气安全门仍未通过，不宣称 PID、真机 `/odom` 或超时停车完成；[当前限制](docs/project_showcase.md#当前限制与安全边界) |
+| ROS 2 Humble 工程 | **实际通过** | 本次Docker复验：11个包，88项测试，0错误/失败/跳过 |
+| Gazebo + LaserScan + SLAM | **实际通过** | Topic、TF、`/map` 和 `/scan` 运行记录 |
+| STM32F407 H2 | **实际通过** | 构建、下载、verify、USART1通信 |
+| UART压力与恢复 | **实际通过** | 10000/10000 PING/PONG、20/20复位重连及异常恢复 |
+| BTS7960双电机 | **BLOCKED / 未验证** | 安全装备、逻辑阈值、编码器电平和固件未完成 |
+| 双编码器/PID/HIL | **未实现** | 不得写入完成指标 |
 
-> 验证状态只采用三类：**实际通过**、**静态检查**、**未验证**。旧报告或规划不能替代当前实测证据。
+## 硬件范围
 
-## 多岗位能力映射
-
-| 岗位方向 | 项目中体现的能力 | 证据入口 |
+| STM32F407ZGT6 | CH340 | IBT-2/BTS7960卖家资料 |
 | --- | --- | --- |
-| 技术支持 / FAE / 售后 | 复现问题、串口联调、异常恢复、风险隔离、编写客户可执行步骤 | [H2 板级验证](docs/verification/2026-08-31-h2-board-bringup.md)、[UART 测试脚本](scripts/test_h2_uart.ps1) |
-| 项目交付 / 实施 | 需求拆解、阶段门、统一接口、验收清单、风险与文档管理 | [验收标准](docs/acceptance.md)、[项目路线](docs/roadmap.md)、[环境说明](docs/environment.md) |
-| 机器人系统 / 硬件测试 | 自动化测试、边界输入、Launch/Topic/TF 检查、软硬件集成验证 | [闭环验证记录](docs/verification/2026-09-01-project-validation.md)、[仓库测试](ros2_ws/src/openrobot_tests/test) |
-| 售前 / 技术销售 | 架构讲解、方案选型、约束说明、完成度与预期管理 | [系统架构](docs/architecture.md)、[硬件 BOM](docs/hardware_bom.md)、[硬件事实](docs/hardware_facts.md) |
+| ![STM32F407ZGT6](docs/assets/showcase/stm32f407zg-board.jpg) | ![CH340](docs/assets/showcase/ch340-usb-ttl.jpg) | ![IBT-2 seller reference](docs/assets/showcase/bts7960-ibt2-seller-reference.jpg) |
+| H2已实测 | UART已实测 | 仅用于端子与卖家参数整理，不代表到货验收 |
 
-更完整的职责、排障案例和证据索引见 [项目成果与验证证据](docs/project_showcase.md)。
+当前已购范围：STM32F407、ST-Link、CH340、两块IBT-2/BTS7960、两台JGA25-370编码器电机、12V/5A电源、正负极分线端子和线材。
 
-## 实物与硬件范围
+## 统一架构
 
-| STM32F407ZGT6 主控 | CH340 USB-TTL | DRV8871 实物近照 |
-| --- | --- | --- |
-| ![STM32F407ZGT6 development board](docs/assets/showcase/stm32f407zg-board.jpg) | ![CH340 USB TTL module](docs/assets/showcase/ch340-usb-ttl.jpg) | ![DRV8871 motor driver close-up](docs/assets/showcase/drv8871-closeup.jpg) |
-| H2 下载、运行和 UART 验证载体 | USART1 115200 8N1 通信链路 | 已确认芯片与端子；限流和持续电流仍待实测 |
-
-图片用于说明已核对的实物范围，不代表电机已经通电或真机闭环已经完成。
-
-## 系统架构
-
-```mermaid
-flowchart LR
-    task[上层任务 / Nav2] --> cmd[/cmd_vel/]
-    cmd --> mode{运行模式}
-    mode -->|仿真| gazebo[Gazebo 差速插件]
-    mode -->|真机规划| driver[ROS 2 串口驱动]
-    driver --> uart[UART 协议]
-    uart --> stm32[STM32F407]
-    stm32 --> motor[DRV8871 / 电机 / 编码器]
-    gazebo --> feedback[/odom / joint_states / scan / tf/]
-    stm32 -. 未完成链路 .-> driver
-    feedback --> slam[SLAM Toolbox / AMCL / Nav2]
+```text
+                         /cmd_vel
+                            ↓
+                   Differential Kinematics
+                    /                      \
+          left_target_rpm          right_target_rpm
+                    \                      /
+                     ROS 2 Serial Driver
+                            ↓ UART
+                         STM32F407
+                     /                  \
+                Left PID             Right PID
+                   ↓                     ↓
+              BTS7960 L             BTS7960 R
+                   ↓                     ↓
+                Motor L               Motor R
+                   ↑                     ↑
+              Encoder L             Encoder R
+                     \                 /
+                      wheel feedback
+                            ↓
+                 /bench/odom_estimate
 ```
 
-- **仿真轨已验证：** Gazebo → LaserScan → SLAM Toolbox，并复用 ROS 2 标准接口。
-- **真机轨当前到 H2：** PC 测试脚本 → CH340 → USART1 → STM32F407 已验证。
-- **真机运动仍受安全门约束：** DRV8871、电机、编码器、PID 和真机里程计未完成验收。
-- 视觉、任务管理和受限 LLM 保留为后续模块，不作为当前完成成果。
+Gazebo使用相同的 `/cmd_vel` 和轮系语义验证完整双轮机器人；台架使用真实左右电机反馈。架空估算不发布真机TF，也不替代标准 `/odom`。
 
-## 典型问题定位
+## 已纠正的接线冲突
 
-| 现象 | 处理过程 | 结果 |
-| --- | --- | --- |
-| ST-Link 可枚举但无法读取 Core ID | 分离供电、复位和 SWD 链路，使用 connect-under-reset，复核实际针脚与接触 | 最终读取 Device ID `0x413`、1 MiB Flash 和 Cortex-M4；[过程记录](docs/verification/2026-08-31-h2-board-bringup.md) |
-| UART 半包、错误波特率或异常输入后可能影响后续通信 | 增加 500 ms 半包清理、错误状态复位、边界输入和恢复测试 | 完整 PING/PONG 可恢复，错误输入返回 `H2-ERR`；[验证记录](docs/verification/2026-09-01-project-validation.md#已解决的通信风险) |
-| 链接器提示 Flash 段为 `RWE` | 增加显式程序头并用 `readelf` 复核段权限 | Flash 为 `R E`，RAM 为 `RW`，重新下载及回归通过；[ELF 证据](docs/verification/2026-09-01-project-validation.md#elf-段权限) |
+- USART1继续使用 `PA9/PA10`，不改到PA2/PA3。
+- 四路PWM候选为 `PB6–PB9 / TIM4_CH1–CH4`。
+- 双编码器候选为 `PA0/PA1 / TIM2` 和 `PA6/PA7 / TIM3`。
+- 四个EN候选为 `PC0–PC3`，各外接约10kΩ下拉并由固件控制。
+- 禁止把 `R_EN/L_EN` 永久接5V。
+- 商品页称3.3V兼容，但5V供电74HC244的实际阈值仍需逐块测量。
 
-## 技术栈
+详见 [硬件事实](docs/hardware_facts.md) 和 [双电机设计](docs/superpowers/specs/2026-09-01-bts7960-dual-motor-bench-design.md)。
 
-- Ubuntu 22.04、ROS 2 Humble、Gazebo Classic 11、RViz2、SLAM Toolbox
-- C++17、Python 3、colcon、ament_cmake / ament_python
-- STM32F407ZGT6、STM32CubeIDE / CubeMX / CubeProgrammer、HAL、ST-Link、CH340
-- Docker、GitHub Actions、pytest / ament lint、PowerShell 硬件验收脚本
-
-## 快速复现
-
-环境：Ubuntu 22.04，或 Windows 11 + WSL2 / Docker Desktop。
+## 快速复现仿真
 
 ```bash
 docker build -f docker/Dockerfile -t openrobot-one:humble .
 docker compose -f docker/compose.yaml run --rm dev
-```
-
-在容器内构建并测试：
-
-```bash
 ./scripts/build_ros.sh
-```
-
-启动 Gazebo 与 SLAM：
-
-```bash
 ./scripts/run_sim.sh --rviz
 ```
 
-在另一终端验收 Topic、TF 和 SLAM：
+另一个终端：
 
 ```bash
 source /workspace/install/setup.bash
@@ -111,37 +86,37 @@ source /workspace/install/setup.bash
 ./scripts/check_slam.sh
 ```
 
-STM32 H2 重复验收需要真实开发板、ST-Link 和 CH340：
+## H2 UART复验
+
+保持两块BTS7960和电机动力完全断开：
 
 ```powershell
-.\scripts\test_h2_uart.ps1 `
-  -Port COM4 `
-  -PingCount 10000 `
-  -ReconnectCount 20 `
+.\scripts\test_h2_uart.ps1 -Port COM4 -PingCount 10000 -ReconnectCount 20 `
   -ProgrammerCli 'C:\path\to\STM32_Programmer_CLI.exe'
 ```
+
+## 真机下一步
+
+1. 完成H0/H1装备、电气和逻辑阈值实测。
+2. 无动力实现并验证四PWM、四EN、双编码器和统一安全停车。
+3. 左右逐通道脉冲，之后才进入双电机PID。
+4. H4通过后实现ROS 2串口闭环和 `/bench/odom_estimate`。
+
+在H0/H1通过前禁止动力上电和任何非零命令。
+
+本次转向的文件、清理范围和验证结果见 [BTS7960双电机转向验证记录](docs/verification/2026-09-01-bts7960-dual-motor-transition.md)。
 
 ## 工程结构
 
 ```text
 OpenRobot-One/
-├── .github/workflows/          # ROS 2 构建与测试
-├── docker/                     # Ubuntu 22.04 + ROS 2 Humble 环境
-├── docs/                       # 架构、协议、BOM、验收和证据
-├── firmware/openrobot_firmware # STM32CubeIDE H2 板级基线
-├── ros2_ws/src/                # 11 个 ROS 2 功能包
-├── scripts/                    # 构建、运行和验收入口
-└── tools/                      # 项目文档生成工具
+├── docker/                     # Ubuntu 22.04 + ROS 2 Humble
+├── docs/                       # 架构、协议、验收和证据
+├── firmware/openrobot_firmware # 当前H2 STM32基线
+├── ros2_ws/src/                # ROS 2仿真和预留驱动包
+├── scripts/                    # 构建、仿真与H2验收
+└── 硬件参数图片/               # 实物与卖家资料原图
 ```
-
-## 当前边界与下一步
-
-- H0/H1 电气安全门仍为 `BLOCKED`：缺少独立电压、连通性、电机电流、限流和保险丝实测。
-- 在安全门通过前，禁止电机通电和非零控制命令。
-- 下一阶段先完成电气事实核验，再冻结 DRV8871、编码器和定时器引脚，进入 H3 架空低速运动。
-- 真实仿真录屏和整车演示将在对应验收完成后补充，不使用效果图代替实测。
-
-详见 [功能验收标准](docs/acceptance.md)、[硬件事实](docs/hardware_facts.md)和[项目路线](docs/roadmap.md)。
 
 ## License
 

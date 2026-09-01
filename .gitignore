@@ -21,6 +21,9 @@ firmware/**/Release/
 __pycache__/
 *.py[cod]
 ~$*.docx
+# Removed legacy hardware handbooks may remain locally while Word holds a lock.
+/docs/OpenRobot-One_真机硬件开发保姆级手册.docx
+/docs/OpenRobot-One_Day5-Day30_零基础实操手册.docx
 *.exe
 .env
 .pio/

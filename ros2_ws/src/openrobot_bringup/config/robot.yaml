@@ -18,6 +18,12 @@ communication:
   command_timeout_ms: 500
   reconnect_interval_ms: 1000
 
+hardware_bench:
+  # Safety lock remains false until H0-H4 have real acceptance evidence.
+  allow_nonzero_motion: false
+  publish_tf: false
+  odometry_topic: /bench/odom_estimate
+
 control:
   loop_hz: 100
   telemetry_hz: 50

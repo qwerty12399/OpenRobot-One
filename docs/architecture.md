@@ -1,126 +1,66 @@
-# OpenRobot-One AI Lite 系统架构
+# OpenRobot-One 分层验证架构
 
-## 1. 设计原则
-
-系统分为智能决策、机器人应用、实时控制和执行机构四层。上位机处理非实时的语言、视觉、任务与导航；STM32 处理确定性的双轮闭环和故障停车。仿真与真机共享标准 ROS 2 接口，不让上层依赖具体执行端。
+## 总体架构
 
 ```mermaid
-flowchart TB
-    subgraph intelligence["智能决策层"]
-      input["文字 / 后续语音"] --> agent["openrobot_ai"]
-    end
-    subgraph application["机器人应用层"]
-      camera["USB Camera"] --> vision["openrobot_vision"]
-      agent --> task["openrobot_task"]
-      vision --> task
-      task --> navigation["openrobot_navigation"]
-      navigation --> velocity["/cmd_vel"]
-    end
-    subgraph realtime["实时控制层"]
-      velocity --> route{"sim / hardware"}
-      route --> gazebo["Gazebo diff drive"]
-      route --> driver["openrobot_driver"]
-      driver --> uart["UART + CRC16"]
-      uart --> mcu["STM32F407：Encoder + PID + Safety"]
-    end
-    subgraph actuator["执行机构层"]
-      mcu --> hbridge["双路 H 桥"] --> motors["左右电机"]
-      motors --> encoders["AB 编码器"] --> mcu
-    end
+flowchart LR
+    cmd[/cmd_vel/] --> kin[差速运动学]
+    kin --> mode{执行模式}
+    mode -->|仿真| gz[Gazebo 双轮底盘]
+    mode -->|真机台架| drv[ROS 2 串口驱动]
+    drv --> uart[UART + CRC + Watchdog]
+    uart --> mcu[STM32 双通道 PID]
+    mcu --> bts[2 x IBT-2/BTS7960]
+    bts --> motors[2 x JGA25-370]
+    motors --> enc[双 AB 编码器]
+    enc --> mcu
+    mcu --> drv
+    drv --> bench[/bench/odom_estimate + diagnostics/]
+    gz --> sim[/odom + joint_states + scan + TF/]
+    sim --> slam[SLAM Toolbox]
 ```
 
-## 2. 包职责
+仿真和真机不是两个无关项目：两者共享 `/cmd_vel`、差速公式、轮系参数版本、左右轮命令/反馈语义和参考向量。仿真验证系统级导航接口，真机验证真实执行与安全链路。
 
-| 包 | 当前状态 | 单一职责 |
+## 当前完成状态
+
+| 层 | 状态 | 证据 |
 | --- | --- | --- |
-| `openrobot_description` | 已实现 | Xacro、RViz、机器人内部 TF |
-| `openrobot_gazebo` | 已实现 | 仿真世界、差速/雷达插件、实体生成 |
-| `openrobot_navigation` | SLAM 已实现 | SLAM Toolbox，后续 AMCL/Nav2 |
-| `openrobot_driver` | 骨架 | UART、协议、运动学、里程计、诊断、重连 |
-| `openrobot_control` | 骨架 | 速度限制与底盘控制协调，不与固件 PID 重复 |
-| `openrobot_vision` | 骨架 | 摄像头、OpenCV、YOLO、目标观测 |
-| `openrobot_ai` | 骨架 | 语言到白名单任务意图，不直接控制 PWM |
-| `openrobot_task` | 骨架 | 搜索、对准、接近、停止状态机 |
-| `openrobot_msgs` | 保留 | 标准消息不足时再添加稳定接口 |
-| `openrobot_bringup` | 已实现 | 组合启动并选择仿真或真机所有者 |
-| `openrobot_tests` | 已实现 | 仓库结构、脚本与跨包验收 |
+| ROS 2/Gazebo/SLAM | 实际通过 | 构建、Topic、TF、LaserScan和SLAM报告 |
+| STM32 H2/UART | 实际通过 | 下载、verify、压力、异常恢复和重连 |
+| BTS7960双电机 | 未验证 | H0/H1仍未通过 |
+| 双编码器/PID | 未验证 | 固件尚未实现 |
+| ROS 2真机台架 | 未验证 | driver仍是安全占位 |
 
-骨架包只声明边界，不代表节点功能已经实现。
+## TF所有权
 
-## 3. 运行链路
+仿真模式：
 
-### 3.1 仿真轨
+- SLAM Toolbox或AMCL二选一发布 `map -> odom`；
+- Gazebo差速插件发布 `odom -> base_footprint`；
+- `robot_state_publisher`发布机器人内部TF。
 
-```text
-/cmd_vel → Gazebo diff drive → /odom + odom→base_footprint
-Gazebo ray sensor → /scan → SLAM Toolbox → /map + map→odom
-robot_state_publisher → base_footprint→base_link 与机器人内部 TF
-```
+真机架空台架：
 
-### 3.2 真机轨
+- 不发布 `map -> odom`；
+- 不发布 `odom -> base_footprint`；
+- `/bench/odom_estimate`只作为数据，不广播TF。
 
-```text
-/cmd_vel → openrobot_driver → 左右目标轮速 → UART → STM32
-STM32 → 双电机 PID → PWM/H桥 → 电机 → 编码器
-STM32 状态 → UART → openrobot_driver → /odom + odom→base_footprint
-robot_state_publisher → base_footprint→base_link 与机器人内部 TF
-```
+## 参数所有权
 
-仿真和真机底盘所有者不可同时启动。
+- 轮径、轮距、限速、方向和通信参数必须版本化。
+- 仿真值与实测值分别标注来源。
+- 编码器计数为0或UNKNOWN时禁止非零真机命令。
+- Topic通过参数或remapping配置，不在源码硬编码。
 
-### 3.3 AI 目标搜索轨
+## 固件责任
 
-```text
-用户文本 → openrobot_ai → 结构化任务
-USB Camera → openrobot_vision → 目标观测
-任务 + 观测 → openrobot_task → 搜索/对准/接近/停止
-状态机输出 → /cmd_vel → 当前底盘执行端
-```
+- 上电、复位、Fault和超时默认禁用两块驱动；
+- 四个EN独立控制并具有外部下拉；
+- 100Hz双速度环、计数/RPM计算和输出限幅；
+- 500ms运动命令看门狗独立于传输心跳；
+- UART状态、故障和序号可追踪。
 
-第一版先支持文字和确定性规则；语音与云端 LLM 是可替换输入，不改变底盘安全边界。
+## 当前范围外
 
-## 4. TF 唯一发布者
-
-| 变换 | 仿真模式 | 真机模式 |
-| --- | --- | --- |
-| `map → odom` | SLAM Toolbox 或 AMCL 二选一 | SLAM Toolbox 或 AMCL 二选一 |
-| `odom → base_footprint` | Gazebo 差速插件 | `openrobot_driver` |
-| `base_footprint → base_link` | `robot_state_publisher` | `robot_state_publisher` |
-| 车体固定/关节关系 | `robot_state_publisher` | `robot_state_publisher` |
-
-目标 TF 树：
-
-```text
-map
-└── odom
-    └── base_footprint
-        └── base_link
-            ├── left_wheel_link
-            ├── right_wheel_link
-            └── laser_link
-```
-
-视觉相机挂载后新增 `camera_link` 固定关系，仍由 `robot_state_publisher` 发布。不得新增第二个节点发布同一条变换。
-
-## 5. 参数所有权
-
-- 机器人几何、速度限制和通信基线：`openrobot_bringup/config/robot.yaml`。
-- 仿真插件参数：`openrobot_gazebo/config/sim.yaml`。
-- SLAM 参数：`openrobot_navigation/config/slam_params.yaml`。
-- 后续视觉、任务、AI 和驱动参数分别归属对应包的 `config/`，再由 Bringup 组合。
-- Topic 名通过 ROS 参数、Launch 参数或 remapping 配置。
-- 串口设备、波特率、超时、协议版本和轮系实测值不得硬编码。
-
-`encoder_counts_per_wheel_rev: 0` 表示尚未标定，真机驱动和固件必须把它视为禁止非零输出的无效值。
-
-## 6. 安全边界
-
-1. STM32 在启动、协议错误、串口超时、传感器故障或看门狗复位后保持 PWM 为零。
-2. ROS 驱动在上游 `/cmd_vel` 超时后持续发送零速。
-3. LLM 只生成白名单任务，不生成 PWM、串口字节或任意代码。
-4. 摄像头故障、检测过期或目标不确定时，任务管理器停车而不是盲目接近。
-5. 电机首次上电必须架空、限流、带保险丝并有人值守。
-
-## 7. 设计范围
-
-AI Lite MVP 包含双轮差速底盘、编码器闭环、USB 摄像头、目标检测、文字任务、目标搜索和 ROS 2 标准接口。micro-ROS、`ros2_control`、机械臂、多机器人、端到端视觉控制和无约束自主 Agent 不在当前范围。
+落地底盘、真实里程计精度、真机SLAM/Nav2、视觉、任务AI、micro-ROS和`ros2_control`不属于当前完成标准。

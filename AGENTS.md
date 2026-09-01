@@ -17,12 +17,13 @@
 - Docker
 - GitHub Actions
 
-OpenRobot-One 是 ROS 2 差速移动机器人双轨 MVP：
+OpenRobot-One 是 ROS 2 差速移动机器人分层验证 MVP：
 
 1. 仿真轨：Gazebo → LaserScan → SLAM Toolbox → AMCL → Nav2。
-2. 真机轨：`/cmd_vel` → ROS 2 串口驱动 → STM32F407 → 双电机 PID → 编码器反馈 → `/odom` 与 TF。
-3. 仿真和真机共用标准接口：`/cmd_vel`、`/odom`、`/tf`、`/joint_states`、`/scan`。
-4. MVP 阶段不使用 micro-ROS 和 `ros2_control`。
+2. 真机轨：`/cmd_vel` → 差速运动学 → ROS 2 串口驱动 → STM32F407 → 两块 BTS7960 → 双电机 PID → 双编码器反馈 → `/bench/odom_estimate`。
+3. 仿真和真机台架共用 `/cmd_vel`、左右轮目标/反馈语义、参数和协议测试向量；标准 `/odom` 与 TF 只由仿真或未来完整底盘发布。
+4. 当前真机是无轮、架空双电机闭环台架，不得宣称落地里程计、真机 SLAM/Nav2 或真实底盘运动。
+5. MVP 阶段不使用 micro-ROS 和 `ros2_control`。
 
 ## 2. 开发前检查
 
@@ -91,11 +92,11 @@ map
 发布职责：
 
 - `map → odom`：由 SLAM Toolbox 或 AMCL 发布。
-- `odom → base_footprint`：由 Gazebo 差速插件或真机驱动发布，二者不可同时发布。
+- `odom → base_footprint`：当前只由 Gazebo 差速插件发布；未来完整真机驱动接管时必须停用 Gazebo 发布者。
 - `base_footprint → base_link` 以及底盘其他固定或关节关系：由 `robot_state_publisher` 发布。
 - 不允许两个节点发布同一条 TF。
 
-任何涉及 TF 的修改都必须先列出每条变换的唯一发布者，并验证仿真模式与真机模式不会同时占用同一 TF。
+双电机架空台架只发布 `/bench/odom_estimate`，不得发布 `odom → base_footprint`。任何涉及 TF 的修改都必须先列出每条变换的唯一发布者，并验证不会重复占用同一 TF。
 
 ## 6. 验证与任务交付
 

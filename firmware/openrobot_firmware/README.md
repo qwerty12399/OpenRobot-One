@@ -12,11 +12,21 @@ confirmed by the LXBF407ZG-P1 V2.0 board files and supplied HAL examples.
 - Status LED: PC13, active low, initialized off
 - Host UART: USART1 on PA9/PA10, 115200 8N1, transmit and receive
 
-## Deliberately not configured
+## Deliberately not configured yet
 
-Motor control signals for the two DRV8871 modules and both encoder timers
-remain unassigned. The exact DRV8871 module pinout and the encoder electrical
-characteristics are still unknown.
+The current H2 firmware does not configure the two IBT-2/BTS7960 modules,
+TIM4 PWM outputs, TIM2/TIM3 encoder interfaces, motor PID, or the independent
+500 ms motion-command watchdog. It must not be used to energize either motor.
+
+The reviewed pin candidates are PB6/PB7 for the left RPWM/LPWM, PB8/PB9 for
+the right RPWM/LPWM, PC0-PC3 for four independently controlled enable inputs,
+PA0/PA1 for the left encoder, and PA6/PA7 for the right encoder. USART1 remains
+on PA9/PA10. These candidates still require CubeMX generation and no-power
+electrical validation before they are frozen.
+
+Each enable input requires an external pull-down so both bridges remain
+disabled while the MCU is resetting or its GPIOs are high impedance. Do not
+tie R_EN or L_EN permanently to 5 V.
 
 The vendor-wide `F407ZG.ioc` also enables RTC, SDIO, SPI3, and USB CDC. Those
 peripherals are board demonstrations and are intentionally omitted from this
