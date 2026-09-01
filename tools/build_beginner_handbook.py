@@ -1005,7 +1005,7 @@ def add_firmware(doc):
         doc,
         [
             "拍照记录所有包装标签和型号，不凭商品标题猜参数。",
-            "万用表确认电源电压与极性。",
+            "使用端子极性明确、带电压/电流显示和可调限流的成品直流电源；按面板把输出设为 12.0 V，并在输出关闭时完成接线。",
             "查电机额定电压、空载电流、堵转电流、减速比和编码器供电。",
             "查 TB6612FNG VM/VCC、电流、STBY 和逻辑电平。",
             "用手转动轮轴，确认没有机械卡死。",
@@ -1029,7 +1029,7 @@ def add_firmware(doc):
     )
 
     day_start(doc, 8, "CubeMX 外设和开环转动", "左右电机可分别低速正反转；复位后 PWM 为 0。")
-    numbered(doc, "在 STM32CubeIDE 新建 STM32F407VET6 工程，保留 `.ioc`。")
+    numbered(doc, "在 STM32CubeIDE 新建 STM32F407ZGT6 工程，保留 `.ioc`。")
     numbered(doc, "配置系统时钟；先使用保守频率，确认调试稳定后再优化。")
     numbered(doc, "选择一个定时器的两个 PWM 通道；PWM 频率建议约 20 kHz。")
     numbered(doc, "左右编码器各使用一个支持 Encoder Mode 的定时器。")
