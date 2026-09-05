@@ -27,7 +27,8 @@
 
 ## T4 H2引脚与安全状态
 
-- TIM4 PB6-PB9四路PWM；PC0-PC3四路EN；TIM2和TIM3双编码器。
+- TIM3 PC6/PC7/PB0/PB1四路PWM；PC0-PC3四路EN；TIM2和TIM1双编码器。
+- PB6/PB7保留给核心板板载32.768 kHz RTC晶振，不得接右编码器。
 - 先GPIO低，再PWM=0，再完成自检，最后才允许EN。
 - Fault、超时、串口错误和复位统一调用安全停车。
 

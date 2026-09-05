@@ -127,6 +127,16 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/main.c</locationURI>
 		</link>
 		<link>
+			<name>Application/User/Core/motor_control.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/motor_control.c</locationURI>
+		</link>
+		<link>
+			<name>Application/User/Core/protocol.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/protocol.c</locationURI>
+		</link>
+		<link>
 			<name>Application/User/Core/stm32f4xx_hal_msp.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Core/Src/stm32f4xx_hal_msp.c</locationURI>

@@ -35,20 +35,20 @@
 - 若芯片以5 V供电，STM32 3.3 V高电平是否满足实际模块阈值仍为 `UNKNOWN`；
 - `R_IS/L_IS` 比例、范围和STM32接口保持 `UNKNOWN`，首次不接。
 
-## 候选引脚
+## 当前冻结引脚
 
 板卡原理图、背面丝印和 ST 复用表支持以下无冲突候选：
 
 | 功能 | 引脚 |
 | --- | --- |
-| 左 RPWM / LPWM | `PB6/TIM4_CH1`、`PB7/TIM4_CH2` |
-| 右 RPWM / LPWM | `PB8/TIM4_CH3`、`PB9/TIM4_CH4` |
+| 左 RPWM / LPWM | `PC6/TIM3_CH1`、`PC7/TIM3_CH2` |
+| 右 RPWM / LPWM | `PB0/TIM3_CH3`、`PB1/TIM3_CH4` |
 | 左 R_EN / L_EN | `PC0`、`PC1` |
 | 右 R_EN / L_EN | `PC2`、`PC3` |
 | 左编码器 | `PA0/TIM2_CH1`、`PA1/TIM2_CH2` |
-| 右编码器 | `PA6/TIM3_CH1`、`PA7/TIM3_CH2` |
+| 右编码器 | `PE9/TIM1_CH1`、`PE11/TIM1_CH2` |
 
-候选引脚当前未被 `OpenRobotFirmware.ioc` 占用，并在核心板排针引出。它们仍需 CubeMX、通断和无动力电平验收后才能冻结。
+上述引脚已写入 `OpenRobotFirmware.ioc` 并重新生成 HAL。PB6/PB7 在核心板原理图中连接板载 32.768 kHz RTC 晶振，不再作为右编码器使用。
 
 用户对话中的 `PA8/PA9/PA10/PA11` 四 PWM 方案不采用：`PA9/PA10` 已属于 USART1，`PA11` 接板载 USB D-。EN 不得固定接5 V，四个 EN 各外接约10 kΩ下拉并由 PC0-PC3控制。
 

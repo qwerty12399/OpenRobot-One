@@ -1,5 +1,28 @@
 # OpenRobot-One STM32 board baseline
 
+## Current Step 20 firmware (2026-09-05)
+
+The current sources have replaced the H2/H3 applications described below with
+the FF+PI motor controller and ASCII telemetry. Those sections are historical
+bring-up instructions, not commands supported by this build.
+
+`APP_TEST_MODE=1` currently starts a left +100 RPM test at approximately one
+second after boot and stops it at six seconds. In this mode the UART watchdog
+is disabled, and automatic targets can overwrite `STOP` on the next control
+tick. Do not treat serial `STOP` as a latched emergency stop in automatic mode.
+No flashing or motor operation was performed for the build repair.
+
+Open the project in `STM32CubeIDE`, refresh/reopen `OpenRobotFirmware`, then
+use **Project > Build Project** with the **Debug** configuration. The project
+links `motor_control.c` and `protocol.c` under `Application/User/Core`.
+Successful acceptance is compilation of both files, no undefined references,
+and generation of `Debug/OpenRobotFirmware.elf`.
+
+USART1 NVIC configuration and its HAL interrupt handler are connected for the
+existing receive callbacks. Actual UART reception, motor response, encoder
+calibration and fault stopping still require hardware verification. The
+nominal encoder CPR and initial PI gains are not measured acceptance results.
+
 This directory contains the minimum STM32CubeIDE configuration that is
 confirmed by the LXBF407ZG-P1 V2.0 board files and supplied HAL examples.
 
@@ -12,17 +35,19 @@ confirmed by the LXBF407ZG-P1 V2.0 board files and supplied HAL examples.
 - Status LED: PC13, active low, initialized off
 - Host UART: USART1 on PA9/PA10, 115200 8N1, transmit and receive
 
-## Deliberately not configured yet
+## Current peripheral baseline
 
-The current H2 firmware does not configure the two IBT-2/BTS7960 modules,
-TIM4 PWM outputs, TIM2/TIM3 encoder interfaces, motor PID, or the independent
-500 ms motion-command watchdog. It must not be used to energize either motor.
+The generated H2 baseline configures the two IBT-2/BTS7960 control interfaces,
+TIM3 four-channel PWM, TIM2/TIM1 encoder interfaces, and TIM6 100 Hz timing.
+Motor PID, the motion command protocol, and the independent 500 ms motion
+watchdog are not implemented yet. PWM compare values start at zero and all
+four enable outputs start low; it must not be used to energize either motor
+until the electrical checks and control firmware are complete.
 
-The reviewed pin candidates are PB6/PB7 for the left RPWM/LPWM, PB8/PB9 for
-the right RPWM/LPWM, PC0-PC3 for four independently controlled enable inputs,
-PA0/PA1 for the left encoder, and PA6/PA7 for the right encoder. USART1 remains
-on PA9/PA10. These candidates still require CubeMX generation and no-power
-electrical validation before they are frozen.
+The frozen pin mapping is PC6/PC7/PB0/PB1 for the four PWM signals, PC0-PC3
+for the four enable outputs, PA0/PA1 for the left encoder, and PE9/PE11 for
+the right encoder. PB6/PB7 are reserved by the board's 32.768 kHz RTC crystal.
+USART1 remains on PA9/PA10.
 
 Each enable input requires an external pull-down so both bridges remain
 disabled while the MCU is resetting or its GPIOs are high impedance. Do not
@@ -50,6 +75,36 @@ Incomplete input is silently discarded after 500 ms of UART inactivity.
 Parity, frame, noise, and overrun flags reset the parser before subsequent
 input is accepted. These protections apply only to the H2 UART parser; they do
 not implement a motor command watchdog.
+
+## H3 guarded motor pulse diagnostic
+
+The H3 diagnostic keeps every motor output disabled at boot and permits only a
+single 20% PWM pulse after a one-use serial authorization. `TIM6` independently
+ends the pulse after 10 control ticks (nominally 100 ms), clears all four PWM
+compare registers, and drives all four enable outputs low.
+
+Supported ASCII commands are:
+
+```text
+MOTOR-ARM
+MOTOR-PULSE LEFT FWD
+MOTOR-PULSE LEFT REV
+MOTOR-PULSE RIGHT FWD
+MOTOR-PULSE RIGHT REV
+MOTOR-STOP
+MOTOR-STATUS
+```
+
+Authorization expires after five seconds and is consumed by the first accepted
+pulse. A pulse without authorization returns `MOTOR-DENIED`. Only one motor can
+be selected per pulse; this firmware does not support continuous PWM, dual-motor
+motion, RPM control, PID, or the final ROS 2 protocol.
+
+`FWD` and `REV` are temporary electrical direction labels because the supplied
+IBT-2 documentation contradicts itself about RPWM/LPWM direction. The completion
+line reports the selected side and direction plus the encoder start count, end
+count, and signed wrap-safe delta so the physical mapping can be frozen from
+evidence.
 
 On Windows, run `scripts/test_h2_uart.ps1` with the CH340 port and the local
 STM32CubeProgrammer CLI path to repeat the UART and reset/reconnect checks.

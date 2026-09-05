@@ -49,16 +49,28 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+
+void Motor_EmergencyStop(void);
 
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
 #define STATUS_LED_Pin GPIO_PIN_13
 #define STATUS_LED_GPIO_Port GPIOC
+#define LEFT_R_EN_Pin GPIO_PIN_0
+#define LEFT_R_EN_GPIO_Port GPIOC
+#define LEFT_L_EN_Pin GPIO_PIN_1
+#define LEFT_L_EN_GPIO_Port GPIOC
+#define RIGHT_R_EN_Pin GPIO_PIN_2
+#define RIGHT_R_EN_GPIO_Port GPIOC
+#define RIGHT_L_EN_Pin GPIO_PIN_3
+#define RIGHT_L_EN_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
