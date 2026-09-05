@@ -19,8 +19,9 @@ communication:
   reconnect_interval_ms: 1000
 
 hardware_bench:
-  # Safety lock remains false until H0-H4 have real acceptance evidence.
-  allow_nonzero_motion: false
+  # Enabled after H3/H4 bench evidence and explicit user authorization.
+  allow_nonzero_motion: true
+  # Bench odometry is data only; hardware mode never broadcasts chassis TF.
   publish_tf: false
   odometry_topic: /bench/odom_estimate
 

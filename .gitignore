@@ -4,9 +4,13 @@
 .codex-docx-qa/
 .workbuddy-ai/
 .pytest_cache/
+.ruff_cache/
 
 # Vendor board bundles and installers are local reference material, not source.
 /开发板内容/
+/硬件参数图片及数据/
+/真机实拍视频/
+/docs/career/
 
 build/
 install/
@@ -18,6 +22,8 @@ firmware/**/Debug/
 firmware/**/Release/
 
 *.log
+*.bak
+*.before_*
 __pycache__/
 *.py[cod]
 ~$*.docx

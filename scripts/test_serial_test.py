@@ -4,7 +4,7 @@ import contextlib
 import io
 import unittest
 from itertools import pairwise
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import serial_test
 
@@ -46,6 +46,26 @@ class FakePort:
 
 
 class SerialTestTests(unittest.TestCase):
+    def test_fragmented_telemetry_survives_timeout(self):
+        port = Mock()
+        port.readline.side_effect = [b"S,100,99,", b"", b"205,100,102,204\r", b"\n"]
+        reader = serial_test.TelemetryReader(port)
+        with contextlib.redirect_stdout(io.StringIO()):
+            for _ in range(3):
+                self.assertIsNone(serial_test.read_sample(reader))
+            self.assertEqual(
+                serial_test.read_sample(reader), (100, 99, 205, 100, 102, 204)
+            )
+
+    def test_overlong_line_discards_tail_until_newline(self):
+        port = Mock()
+        port.readline.side_effect = [b"X" * 97, b"S,0,0,0,0,0,0\n", b"S,0,0,0,0,0,0\n"]
+        reader = serial_test.TelemetryReader(port)
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertIsNone(serial_test.read_sample(reader))
+            self.assertIsNone(serial_test.read_sample(reader))
+            self.assertEqual(serial_test.read_sample(reader), (0, 0, 0, 0, 0, 0))
+
     def run_fake(self, port, watchdog=False):
         with (
             patch.object(serial_test.time, "monotonic", lambda: port.now),

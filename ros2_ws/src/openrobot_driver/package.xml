@@ -2,16 +2,29 @@
 <package format="3">
   <name>openrobot_driver</name>
   <version>0.1.0</version>
-  <description>STM32 serial transport and chassis feedback boundary for OpenRobot-One.</description>
-  <maintainer email="maintainers@openrobot.one">OpenRobot-One maintainers</maintainer>
+
+  <description>
+    STM32 serial transport and chassis feedback boundary for OpenRobot-One.
+  </description>
+
+  <maintainer email="maintainers@openrobot.one">
+    OpenRobot-One maintainers
+  </maintainer>
+
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
   <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -57,13 +57,13 @@ def test_robot_yaml_preserves_known_values_and_unknown_encoder_count():
     assert "wheel_separation_m: 0.20" in source
     assert "encoder_counts_per_wheel_rev: 0" in source
     assert "command_timeout_ms: 500" in source
-    assert "allow_nonzero_motion: false" in source
+    assert "allow_nonzero_motion: true" in source
     assert "publish_tf: false" in source
     assert "odometry_topic: /bench/odom_estimate" in source
 
 
-def test_hardware_mode_remains_a_safe_placeholder():
-    """Ensure documentation changes cannot silently enable bench motion."""
+def test_hardware_mode_preserves_bench_topic_and_tf_boundary():
+    """Keep hardware feedback distinct from simulation odometry and TF."""
     source_root = Path(__file__).resolve().parents[2]
     hardware_launch = (
         source_root
@@ -73,5 +73,11 @@ def test_hardware_mode_remains_a_safe_placeholder():
     )
     source = hardware_launch.read_text(encoding="utf-8")
 
-    assert "H0-H4 safety gates are not implemented" in source
-    assert "no motor command, odometry, or TF will be published" in source
+    assert '"bench_odom_topic": "/bench/odom_estimate"' in source
+    assert '"cmd_vel_topic": "/cmd_vel"' in source
+    assert '"joint_states_topic": "/joint_states"' in source
+    assert '"bench_odom_frame": "bench_odom"' in source
+    assert '"base_frame": "base_footprint"' in source
+    assert "TransformBroadcaster" not in source
+    assert "publish_odom_tf" not in source
+    assert '"/odom"' not in source

@@ -12,6 +12,32 @@ import time
 import serial
 
 
+class TelemetryReader:
+    """Keep incomplete lines across serial read timeouts, with bounded storage."""
+
+    def __init__(self, port):
+        self.port = port
+        self.pending = bytearray()
+        self.discarding = False
+
+    def readline(self):
+        chunk = self.port.readline()
+        if self.discarding:
+            if chunk.endswith(b"\n"):
+                self.discarding = False
+            return b""
+        self.pending.extend(chunk)
+        if len(self.pending) > 96:
+            self.pending.clear()
+            self.discarding = not chunk.endswith(b"\n")
+            return b""
+        if not self.pending.endswith(b"\n"):
+            return b""
+        line = bytes(self.pending)
+        self.pending.clear()
+        return line
+
+
 def read_sample(port):
     """Return one complete six-field telemetry sample, or None."""
     raw = port.readline()
@@ -34,14 +60,16 @@ def send(port, command):
     print(f"{time.monotonic():.3f} TX {command.decode('ascii').strip()}", flush=True)
 
 
-def observe_watchdog(port, last_command):
+def observe_watchdog(port, last_command, reader=None):
     """Observe command silence; host timestamps are not MCU timing measurements."""
     print("WATCHDOG: TX paused; waiting for firmware timeout (no STOP sent).")
     active_seen = False
     cutoff_time = None
     stopped_samples = 0
+    if reader is None:
+        reader = TelemetryReader(port)
     while time.monotonic() - last_command < 1.5:
-        sample = read_sample(port)
+        sample = read_sample(reader)
         elapsed = time.monotonic() - last_command
         if sample is not None:
             disabled = all(sample[index] == 0 for index in (0, 2, 3, 5))
@@ -73,13 +101,14 @@ def observe_watchdog(port, last_command):
 
 
 def run_test(port, watchdog=False):
+    reader = TelemetryReader(port)
     try:
         # Require live stopped telemetry before sending any nonzero command.
         port.reset_input_buffer()
         deadline = time.monotonic() + 3.0
         stopped_samples = 0
         while time.monotonic() < deadline and stopped_samples < 10:
-            sample = read_sample(port)
+            sample = read_sample(reader)
             if sample is None:
                 continue
             if any(sample):
@@ -104,7 +133,7 @@ def run_test(port, watchdog=False):
                 send(port, b"V,100,100\n")
                 last_command = time.monotonic()
                 next_send = now + 0.1
-            sample = read_sample(port)
+            sample = read_sample(reader)
             if sample is not None:
                 last_sample = time.monotonic()
                 if sample[1] < -10 or sample[4] < -10:
@@ -112,7 +141,7 @@ def run_test(port, watchdog=False):
                 if abs(sample[2]) >= 400 or abs(sample[5]) >= 400:
                     raise RuntimeError("Motor output reached the configured 400 limit")
         if watchdog:
-            observe_watchdog(port, last_command)
+            observe_watchdog(port, last_command, reader)
     finally:
         # Watchdog observation completes/fails before this cleanup command.
         send(port, b"V,0,0\n")
@@ -123,7 +152,7 @@ def run_test(port, watchdog=False):
     deadline = time.monotonic() + 2.0
     stopped_samples = 0
     while time.monotonic() < deadline:
-        sample = read_sample(port)
+        sample = read_sample(reader)
         if sample is not None:
             stopped_samples = stopped_samples + 1 if not any(sample) else 0
             if stopped_samples >= 3:

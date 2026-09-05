@@ -6,22 +6,23 @@ The current sources have replaced the H2/H3 applications described below with
 the FF+PI motor controller and ASCII telemetry. Those sections are historical
 bring-up instructions, not commands supported by this build.
 
-`APP_TEST_MODE=1` currently starts a left +100 RPM test at approximately one
-second after boot and stops it at six seconds. In this mode the UART watchdog
-is disabled, and automatic targets can overwrite `STOP` on the next control
-tick. Do not treat serial `STOP` as a latched emergency stop in automatic mode.
-No flashing or motor operation was performed for the build repair.
+The release configuration uses `APP_TEST_MODE=0`: formal UART/ROS mode with
+dual-motor FF+PI control and the 500 ms communication watchdog enabled.
+Automatic test modes remain diagnostic-only and must not be used for normal
+ROS operation.
 
 Open the project in `STM32CubeIDE`, refresh/reopen `OpenRobotFirmware`, then
 use **Project > Build Project** with the **Debug** configuration. The project
 links `motor_control.c` and `protocol.c` under `Application/User/Core`.
-Successful acceptance is compilation of both files, no undefined references,
-and generation of `Debug/OpenRobotFirmware.elf`.
+Successful build acceptance is compilation of both files, no undefined
+references, and generation of `Debug/OpenRobotFirmware.elf`. The 2026-09-05
+hardware acceptance additionally verified dual encoder feedback, forward,
+reverse, differential rotation and timeout stopping on the suspended bench.
 
 USART1 NVIC configuration and its HAL interrupt handler are connected for the
-existing receive callbacks. Actual UART reception, motor response, encoder
-calibration and fault stopping still require hardware verification. The
-nominal encoder CPR and initial PI gains are not measured acceptance results.
+existing receive callbacks. UART reception, motor response, encoder direction,
+FF+PI control and timeout stopping have hardware evidence. The nominal encoder
+CPR and PI gains are configuration values, not independent metrology results.
 
 This directory contains the minimum STM32CubeIDE configuration that is
 confirmed by the LXBF407ZG-P1 V2.0 board files and supplied HAL examples.
@@ -37,12 +38,11 @@ confirmed by the LXBF407ZG-P1 V2.0 board files and supplied HAL examples.
 
 ## Current peripheral baseline
 
-The generated H2 baseline configures the two IBT-2/BTS7960 control interfaces,
-TIM3 four-channel PWM, TIM2/TIM1 encoder interfaces, and TIM6 100 Hz timing.
-Motor PID, the motion command protocol, and the independent 500 ms motion
-watchdog are not implemented yet. PWM compare values start at zero and all
-four enable outputs start low; it must not be used to energize either motor
-until the electrical checks and control firmware are complete.
+The generated project configures the two IBT-2/BTS7960 control interfaces,
+TIM3 four-channel 20 kHz PWM, TIM2/TIM1 encoder interfaces, and TIM6 100 Hz
+control timing. `motor_control.c` implements the dual FF+PI loops and
+`protocol.c` implements the current ASCII command/telemetry exchange. PWM
+compare values start at zero and all four enable outputs start low.
 
 The frozen pin mapping is PC6/PC7/PB0/PB1 for the four PWM signals, PC0-PC3
 for the four enable outputs, PA0/PA1 for the left encoder, and PE9/PE11 for

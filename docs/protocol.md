@@ -7,7 +7,7 @@
 - 输入：`/cmd_vel`。
 - 输出：`/odom`、`/tf`、`/joint_states`、`/scan`、`/map`。
 
-### 计划中的真机台架接口
+### 当前真机台架接口
 
 - `/bench/left_target_rpm`、`/bench/right_target_rpm`；
 - `/bench/left_measured_rpm`、`/bench/right_measured_rpm`；
@@ -15,7 +15,8 @@
 - `/bench/state`、`/bench/fault`、`/diagnostics`；
 - `/bench/odom_estimate`。
 
-台架估算不占用标准 `/odom`，也不发布真机TF。
+台架估算不占用标准 `/odom`，也不广播底盘TF。它只表达架空编码器数学
+估算，不能作为落地里程计精度证据。
 
 ## 差速运动学
 

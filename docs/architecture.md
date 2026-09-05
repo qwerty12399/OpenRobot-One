@@ -15,7 +15,7 @@ flowchart LR
     motors --> enc[双 AB 编码器]
     enc --> mcu
     mcu --> drv
-    drv --> bench[/bench/odom_estimate + diagnostics/]
+    drv --> bench[/bench/odom_estimate/]
     gz --> sim[/odom + joint_states + scan + TF/]
     sim --> slam[SLAM Toolbox]
 ```
@@ -28,9 +28,9 @@ flowchart LR
 | --- | --- | --- |
 | ROS 2/Gazebo/SLAM | 实际通过 | 构建、Topic、TF、LaserScan和SLAM报告 |
 | STM32 H2/UART | 实际通过 | 下载、verify、压力、异常恢复和重连 |
-| BTS7960双电机 | 未验证 | H0/H1仍未通过 |
-| 双编码器/PID | 未验证 | 固件尚未实现 |
-| ROS 2真机台架 | 未验证 | driver仍是安全占位 |
+| BTS7960双电机 | 实际通过 | 四方向及双电机架空闭环日志 |
+| 双编码器/PI | 实际通过 | ±100 RPM及差速方向反馈 |
+| ROS 2真机台架 | 实际通过 | `/cmd_vel`、超时停车、JointState、架空估算与TF |
 
 ## TF所有权
 
@@ -44,7 +44,8 @@ flowchart LR
 
 - 不发布 `map -> odom`；
 - 不发布 `odom -> base_footprint`；
-- `/bench/odom_estimate`只作为数据，不广播TF。
+- 不发布替代的底盘TF；
+- `/bench/odom_estimate`只表达架空编码器数学积分。
 
 ## 参数所有权
 
